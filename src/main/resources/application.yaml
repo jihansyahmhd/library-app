@@ -1,0 +1,111 @@
+# application.yml - Main configuration file
+spring:
+  application:
+    name: library
+
+  # R2DBC Configuration
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5435/library_db
+    username: library_user
+    password: library_pass
+    host: localhost
+    port: 5435
+    name: library_db
+
+  # Flyway Configuration
+  flyway:
+    enabled: true  # Disable automatic migration on startup
+    url: jdbc:postgresql://localhost:5435/library_db
+    user: library_user
+    password: library_pass
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+  # WebFlux Configuration
+  webflux:
+    base-path: /api/v1
+
+server:
+  port: 8080
+
+# Logging Configuration
+logging:
+  level:
+    com.exam.library: DEBUG
+    org.springframework.r2dbc: DEBUG
+    org.flywaydb: INFO
+    io.r2dbc: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# SpringDoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  show-actuator: true
+
+---
+# application-local.yml - Local development profile
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5435/library_db
+    username: library_user
+    password: library_pass
+    host: localhost
+    port: 5435
+    name: library_db
+
+  flyway:
+    url: jdbc:postgresql://localhost:5435/library_db
+    user: library_user
+    password: library_pass
+
+logging:
+  level:
+    com.exam.library: DEBUG
+    root: INFO
+
+---
+# application-docker.yml - Docker profile
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  r2dbc:
+    url: r2dbc:postgresql://postgres:5435/library_db
+    username: library_user
+    password: library_pass
+    host: postgres
+    port: 5435
+    name: library_db
+
+  flyway:
+    url: jdbc:postgresql://postgres:5435/library_db
+    user: library_user
+    password: library_pass
+
+---
+# application-test.yml - Test profile
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+
+  flyway:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    user: sa
+    password:

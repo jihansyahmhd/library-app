@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: library-postgres
+    environment:
+      POSTGRES_DB: library_db
+      POSTGRES_USER: library_user
+      POSTGRES_PASSWORD: library_pass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5435:5432"   # host:container -> host 5435 forward ke container 5435
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - library-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U library_user -d library_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  library-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # optional: paksa platform jika anda butuh (mis. amd64)
+      # platform: linux/amd64
+    container_name: library-api
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      # gunakan R2DBC URL untuk runtime reactive
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5435/library_db
+      SPRING_R2DBC_USERNAME: library_user
+      SPRING_R2DBC_PASSWORD: library_pass
+
+      # Flyway (JDBC) - untuk migrasi saat startup
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgres:5435/library_db
+      SPRING_FLYWAY_USER: library_user
+      SPRING_FLYWAY_PASSWORD: library_pass
+
+      # opsional: server port
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - library-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  library-network:
+    driver: bridge
